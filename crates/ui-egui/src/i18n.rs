@@ -137,6 +137,7 @@ language_table! {
     Fi, "fi", "Suomi", "Latn", include_str!("../locales/fi.json");
     Id, "id", "Bahasa Indonesia", "Latn", include_str!("../locales/id.json");
     Vi, "vi", "Tiếng Việt", "Latn", include_str!("../locales/vi.json");
+    Ko, "ko", "한국어", "Kore", include_str!("../locales/ko.json");
 }
 
 impl Locale {
@@ -522,6 +523,21 @@ const BOOL_CONTEXT: &str = "smart album value";
 
 fn bool_text_in(language: Locale, b: bool) -> &'static str {
     tr_ctx_in(language, BOOL_CONTEXT, lightcraft_catalog::rules::bool_label(b))
+}
+
+/// The context of the colour-range mask's eyedropper button ([`tr_ctx_in`]). Its English label
+/// "Pick" is also the photo flag, which some languages word differently (Korean 채택 for the flag,
+/// 색상 선택 for sampling a colour).
+const PICK_COLOUR_CONTEXT: &str = "mask colour range";
+
+/// What the colour-range eyedropper button reads: the contextual entry where a language has
+/// one, else its plain "Pick".
+pub fn pick_colour_text() -> &'static str {
+    pick_colour_text_in(language())
+}
+
+fn pick_colour_text_in(language: Locale) -> &'static str {
+    tr_ctx_in(language, PICK_COLOUR_CONTEXT, "Pick")
 }
 
 /// A rule summary for display, keeping free-text rule values verbatim.

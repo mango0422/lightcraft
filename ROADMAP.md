@@ -93,7 +93,7 @@ while lower-layer errors stay English. Detail: [localization-parity.md](docs/loc
 | Indonesian | id | 100% (What's New in English) | partial |
 | Japanese | ja | 87% | partial |
 | German | de | 97% (3,644/3,754) | partial |
-| Korean | ko | 0% | none (no Hangul face) |
+| Korean | ko | every active message (What's New in English) | partial: native review pending; desktop draws NanumGothic; the web build embeds no Korean face yet (Hangul comes only from the Chinese face it loads) |
 | Vietnamese | vi | 0% | none |
 
 Also shipped: Traditional Chinese (87%), Russian (74%), Ukrainian (99%), Italian (92%), Georgian (100%), Finnish (79%).

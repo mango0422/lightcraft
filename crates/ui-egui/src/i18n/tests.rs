@@ -6,7 +6,7 @@ use super::*;
 #[test]
 fn languages_switch_persist_and_keep_user_values() {
     use crate::control::{ControlRequest, Outcome};
-    let languages: [(Locale, &str, &[&str], &str); 8] = [
+    let languages: [(Locale, &str, &[&str], &str); 9] = [
         (Locale::Cs, "czech", &["cs", "cs-CZ", "cs_CZ.UTF-8", "cs-Latn-CZ"], "áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ„“"),
         (Locale::Id, "indonesian", &["id", "id-ID", "id_ID.UTF-8", "id-Latn-ID"], ""),
         (Locale::Sv, "swedish", &["sv", "sv-SE", "sv_SE.UTF-8", "sv-FI"], "åäöÅÄÖé”’"),
@@ -15,6 +15,8 @@ fn languages_switch_persist_and_keep_user_values() {
         (Locale::It, "italian", &["it", "it-IT", "it_IT.UTF-8", "it-Latn-IT", "it-CH"], ""),
         (Locale::Fi, "finnish", &["fi", "fi-FI", "fi_FI.UTF-8", "fi-Latn-FI"], ""),
         (Locale::Vi, "vietnamese", &["vi", "vi-VN", "vi_VN", "vi_VN.UTF-8"], ""),
+        // (Hangul glyphs need craft-fonts: `craft_fonts_render_cjk_in_the_ui` checks them)
+        (Locale::Ko, "korean", &["ko", "ko-KR", "ko_KR.UTF-8", "KO"], ""),
     ];
     for (locale, command, tags, letters) in languages {
         let command = format!("app.language.{command}");
@@ -390,6 +392,7 @@ fn language_commands_cover_every_language() {
         ("app.language.finnish", Locale::Fi),
         ("app.language.indonesian", Locale::Id),
         ("app.language.vietnamese", Locale::Vi),
+        ("app.language.korean", Locale::Ko),
     ];
     // One command per language, and every command in the UI command tables.
     assert_eq!(commands.len(), Locale::ALL.len());
@@ -819,7 +822,8 @@ fn fonts_ctx(craft: &'static [lightcraft_engine::CraftFont]) -> egui::Context {
 /// family, Monospace included.
 #[test]
 fn craft_fonts_render_cjk_in_the_ui() {
-    let samples = [(Locale::Ja, "日本語の文字"), (Locale::ZhHans, "简体中文字"), (Locale::ZhHant, "繁體中文字")];
+    // (Korean: two syllables and a compatibility jamo, no space)
+    let samples = [(Locale::Ja, "日本語の文字"), (Locale::ZhHans, "简体中文字"), (Locale::ZhHant, "繁體中文字"), (Locale::Ko, "한글ㄱ")];
     for (language, sample) in samples {
         if !lightcraft_engine::CRAFT_FONTS.iter().any(|font| font.serves(language.script())) {
             lightcraft_testkit::skip!(Fonts, "{}: built without a craft-fonts face for {}", language.code(), language.script());
@@ -935,6 +939,32 @@ fn date_headings_in_every_language() {
         for key in ["", "abcd", "2026-xx", "2026-13", "2026-09-xx", "２０２６-09"] {
             assert!(!date_group_label(key, false).contains('{'), "{language:?}: {key:?}");
             assert!(!date_group_label(key, true).contains('{'), "{language:?}: {key:?}");
+        }
+    }
+    set_language(Locale::En);
+}
+
+/// Korean dates read year, month, day with their unit words and no brackets, counts take the 장
+/// counter with no English plural ending, and the colour-range eyedropper reads 색상 선택 while
+/// the photo flag stays 채택. The every-language checks above only look for the numbers.
+#[test]
+fn korean_dates_counts_and_eyedropper_read_naturally() {
+    set_language(Locale::Ko);
+    assert_eq!(date_group_label("2026-09-20", false), "2026년 9월 20일 일요일");
+    assert_eq!(date_group_label("2026-09-20", true), "20일 일요일");
+    assert_eq!(display_time("2026-09-20T16:04:05"), "2026년 9월 20일 일요일 16:04:05");
+    for n in [0usize, 1, 2, 5, 22] {
+        let text = tr_format!("Imported {} photo{}", n, plural_s(n));
+        assert!(text.contains(&format!("사진 {n}장")), "{text}");
+        assert!(!text.ends_with('s'), "{text}");
+    }
+    assert_eq!(pick_colour_text_in(Locale::Ko), "색상 선택");
+    assert_eq!(Locale::Ko.tr("Pick"), "채택");
+    assert_eq!(Locale::Ko.tr("Select"), "선택");
+    // a language without the contextual entry keeps its plain Pick
+    for language in Locale::ALL {
+        if language.catalog().get(&format!("{PICK_COLOUR_CONTEXT}|Pick")).is_none() {
+            assert_eq!(pick_colour_text_in(*language), language.tr("Pick"), "{language:?}");
         }
     }
     set_language(Locale::En);
@@ -1094,11 +1124,12 @@ fn plain_messages() -> std::collections::BTreeSet<String> {
         "Imported Photos",
     ]);
     labels.extend(crate::panels::keyword_list::VARIABLE_LABELS);
-    let contextual = format!("{BOOL_CONTEXT}|");
+    // contextual entries are optional by design: a language without one shows its plain message
+    let contextual = [format!("{BOOL_CONTEXT}|"), format!("{PICK_COLOUR_CONTEXT}|")];
     Locale::ALL
         .iter()
         .flat_map(|language| language.catalog().keys())
-        .filter(|key| !key.starts_with(&contextual))
+        .filter(|key| !contextual.iter().any(|prefix| key.starts_with(prefix.as_str())))
         .cloned()
         .chain(gaps::source_messages())
         .chain(labels.into_iter().map(str::to_string))

@@ -691,7 +691,7 @@ fn range_controls(app: &mut LightcraftApp, ui: &mut egui::Ui, comp: usize, shape
                         .size(11.5),
                 );
                 let picking = app.ui.tool == "colorRange";
-                if text_button(ui, &format!("colorPick{comp}"), crate::i18n::tr("Pick"), picking)
+                if text_button(ui, &format!("colorPick{comp}"), crate::i18n::pick_colour_text(), picking)
                     .on_hover_text(crate::i18n::tr("Click the photo to pick a colour; ⇧-click adds more (up to 5)"))
                     .clicked()
                 {
