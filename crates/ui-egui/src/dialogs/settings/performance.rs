@@ -211,6 +211,32 @@ fn background_prep(app: &mut LightcraftApp, ui: &mut egui::Ui, t: &Tokens) {
 /// Where this library keeps its smart previews (the offline-editing proxies, which can be large):
 /// the effective folder, what is in it, and choosing another one.
 #[cfg(not(target_arch = "wasm32"))]
+/// The smart-preview folder's count and size, or why it can't be used. (Its own function:
+/// `tr_format!` expands to one arm per language, which would push [`smart_previews`] over
+/// clippy's complexity limit.)
+fn smart_previews_status(ui: &mut egui::Ui, t: &Tokens, available: bool, count: u64, bytes: u64) {
+    if available {
+        hint(
+            ui,
+            t,
+            &crate::i18n::tr_format!(
+                "{count} smart preview{} · {:.1} MB",
+                if count == 1 { "" } else { "s" },
+                bytes as f64 / 1048576.0,
+                count = count
+            ),
+        );
+    } else {
+        hint(
+            ui,
+            t,
+            crate::i18n::tr(
+                "This folder is not available (drive disconnected?). Smart previews are not built or used until it is back or you choose another folder.",
+            ),
+        );
+    }
+}
+
 fn smart_previews(app: &mut LightcraftApp, ui: &mut egui::Ui, t: &Tokens) {
     // listing a big folder every frame would be slow: refresh every 2 s and after a change
     let cache = egui::Id::unique("smart-location");
@@ -245,26 +271,7 @@ fn smart_previews(app: &mut LightcraftApp, ui: &mut egui::Ui, t: &Tokens) {
         }
     });
     let (count, bytes) = (loc["count"].as_u64().unwrap_or(0), loc["bytes"].as_u64().unwrap_or(0));
-    if available {
-        hint(
-            ui,
-            t,
-            &crate::i18n::tr_format!(
-                "{count} smart preview{} · {:.1} MB",
-                if count == 1 { "" } else { "s" },
-                bytes as f64 / 1048576.0,
-                count = count
-            ),
-        );
-    } else {
-        hint(
-            ui,
-            t,
-            crate::i18n::tr(
-                "This folder is not available (drive disconnected?). Smart previews are not built or used until it is back or you choose another folder.",
-            ),
-        );
-    }
+    smart_previews_status(ui, t, available, count, bytes);
     // what happens to the previews already built when the folder changes
     let mode_id = egui::Id::unique("smart-existing");
     let mut mode: u8 = ui.data(|d| d.get_temp(mode_id)).unwrap_or(0);

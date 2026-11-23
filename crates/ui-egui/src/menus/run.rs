@@ -1477,7 +1477,7 @@ fn ui_commands_11(app: &mut LightcraftApp, ctx: &egui::Context, id: &str, p: &Va
             }
             let r = app.session.execute("preset.export", &params).map_err(|e| e.to_string());
             if let Ok(v) = &r {
-                app.toast(ctx, crate::i18n::tr_format!("Exported {} preset{}", v["count"], if v["count"] == 1 { "" } else { "s" }));
+                app.toast(ctx, exported_presets_text(v));
             }
             r
         }
@@ -1485,6 +1485,12 @@ fn ui_commands_11(app: &mut LightcraftApp, ctx: &egui::Context, id: &str, p: &Va
         _ => return None,
     };
     Some(r)
+}
+
+/// The toast after `file.exportPresets`. (Its own function: `tr_format!` expands to one arm per
+/// language, which would push the command table above over clippy's complexity limit.)
+fn exported_presets_text(v: &Value) -> String {
+    crate::i18n::tr_format!("Exported {} preset{}", v["count"], if v["count"] == 1 { "" } else { "s" })
 }
 
 /// Part 12 of 12 of the UI commands; `None` means the id is not one of this part's.
