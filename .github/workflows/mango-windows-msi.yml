@@ -1,0 +1,79 @@
+# mango fork only (2026-11-25): builds the Windows x64 installer for the fork's Korean releases.
+#
+# Pushing a `v<version>-ko.<n>` tag builds the MSI and the portable zip with the same
+# packaging/windows/package.ps1 the upstream release uses, and attaches them to that tag's GitHub
+# Release (created as a pre-release if it doesn't exist yet). Nothing is signed: there are no
+# signing secrets, so sign.ps1 warns and leaves the files unsigned, and Windows SmartScreen warns
+# on install. Upstream's own release pipeline is release.yml (push to `release`), which needs the
+# signing secrets and paid macOS runners; this workflow doesn't touch it.
+name: mango Windows MSI
+
+on:
+  push:
+    tags: ["v*-ko.*"]
+
+permissions: {}
+
+concurrency:
+  group: mango-windows-msi-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  windows-msi:
+    name: Windows x64 MSI
+    runs-on: windows-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: 0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # The same craft-fonts commit as release.yml, so the installer embeds NanumGothic for Korean.
+      - name: Check out craft-fonts
+        uses: actions/checkout@v4
+        with:
+          repository: storytold/craft-fonts
+          ref: b076417b5880bd4154bd22f00695b1d28c6bea83
+          path: craft-fonts
+          persist-credentials: false
+      - name: Install Rust
+        shell: pwsh
+        run: |
+          rustup toolchain install stable --profile minimal --target x86_64-pc-windows-msvc
+          rustup default stable
+          rustc --version
+      # WiX 5.0.2, the version package.ps1 pins its extensions to.
+      - name: Install WiX
+        shell: pwsh
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+      - name: Build and package
+        shell: pwsh
+        env:
+          CRAFT_FONTS_DIR: ${{ github.workspace }}/craft-fonts
+          CRAFT_FONTS_REQUIRED: "1"
+        run: |
+          $env:LIGHTCRAFT_VERSION = $env:GITHUB_REF_NAME.TrimStart('v')
+          ./packaging/windows/package.ps1 -Arch x64
+          Get-ChildItem dist/release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lightcraft-windows-x64
+          path: dist/release/*
+          if-no-files-found: error
+      - name: Attach to the GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --prerelease --verify-tag --title "LightCraft $TAG" --notes "Korean build of LightCraft (mango fork)."
+          fi
+          gh release upload "$TAG" dist/release/* --clobber
