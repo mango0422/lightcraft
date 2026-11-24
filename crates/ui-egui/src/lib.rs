@@ -12,6 +12,11 @@
 pub const UPDATE_APP: craft_update::app::App = craft_update::app::App {
     icon_png: Some(include_bytes!("../../../assets/app-icon/hicolor/128x128/apps/ai.storyteller.lightcraft.png")),
     accent: Some([0xf2, 0xa5, 0x16]),
+    // mango fork (2026-11-24): look for updates in the fork's releases. Upstream's next release
+    // would otherwise be offered at start-up and replace this build (its Korean default and the
+    // macOS Korean IME fix) with storytold's. A fork update needs a higher Cargo.toml version:
+    // the `-ko.N` tags are pre-releases of the same version, so they are never offered over it.
+    repo: "mango0422/lightcraft",
     ..craft_update::suite::LIGHTCRAFT
 };
 
