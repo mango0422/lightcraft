@@ -217,4 +217,9 @@ egui_system_font_provider = { git = "https://github.com/storytold/egui.git", rev
 eframe = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
 egui_demo_lib = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
 egui_inspection = { git = "https://github.com/storytold/egui.git", rev = "6d518fc799681571963842f95b55a6b68431b15a" }
-winit = { git = "https://github.com/storytold/winit.git", rev = "a517b3846ee8457d84ee4975110bfda6797c44dc" }
+# mango fork (2026-11-24): storytold/winit a517b38 plus one macOS fix (5cd7a51). Apple's 2-Set
+# Korean commits a syllable and types the next jamo in one key press; the jamo never reached the
+# app, so the next syllable deleted the one before it (부산여행 → 부여행). The previous pin was
+# storytold/winit a517b3846ee8457d84ee4975110bfda6797c44dc; go back to it once storytold carries
+# an equivalent fix.
+winit = { git = "https://github.com/mango0422/winit.git", rev = "5cd7a5153761a70a2f255f95b4801b69e5b9a8fd" }
