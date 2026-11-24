@@ -195,9 +195,10 @@ thread_local! {
 }
 
 /// Install the language the "Auto" setting resolves to when nothing is stored. The browser host
-/// calls this once at startup with the browser's own languages ([`locale_from_tags`]); the
-/// desktop host doesn't: there Auto keeps following the environment. Must run before the UI state
-/// is first constructed.
+/// calls this once at startup with the browser's own languages ([`locale_from_tags`]). In the mango
+/// fork the desktop host installs Korean (`apps/lightcraft/src/main.rs`); upstream's desktop host
+/// doesn't, and there Auto keeps following the environment. Must run before the UI state is first
+/// constructed.
 pub fn set_default_language(language: Locale) {
     DEFAULT_LANGUAGE.with(|slot| slot.set(Some(language)));
 }

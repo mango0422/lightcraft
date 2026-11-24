@@ -286,11 +286,15 @@ fn main() -> eframe::Result {
     // used; --library and LIGHTCRAFT_LIBRARY still win
     let env_library: Option<std::path::PathBuf> = std::env::var_os("LIGHTCRAFT_LIBRARY").filter(|p| !p.is_empty()).map(Into::into);
     let (library_dir, opened_by_argument) = launch_library_choice(library_dir, env_library.as_ref(), launch_library);
+    // mango fork (2026-11-24 user decision: this build starts in Korean): "Auto" resolves to Korean
+    // on the desktop, the way the web host installs the browser's languages. A saved language and
+    // LIGHTCRAFT_LANGUAGE still win, and a message Korean doesn't translate shows in English. Must
+    // run before the UI state is first built (`load_prefs`). Upstream leaves Auto on English here.
+    lightcraft_ui_egui::i18n::set_default_language(lightcraft_ui_egui::i18n::Locale::Ko);
     let (prefs, prefs_warning, keep_prefs_file) = load_prefs(in_memory);
     // the saved language from the start, so a failed start is reported in it too
-    if let Some(ui) = &prefs {
-        lightcraft_ui_egui::i18n::set_language(ui.language);
-    }
+    let start_language = prefs.as_ref().map_or_else(lightcraft_ui_egui::i18n::default_language, |ui| ui.language);
+    lightcraft_ui_egui::i18n::set_language(start_language);
     // --library, else LIGHTCRAFT_LIBRARY, else the list of recent libraries if Settings say Ask
     // me, else the library last opened from Settings, else the default location
     let launch = lightcraft_ui_egui::panels::library_problem::launch_plan(
